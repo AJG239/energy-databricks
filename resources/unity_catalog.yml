@@ -1,0 +1,26 @@
+resources:
+  schemas:
+    raw:
+      catalog_name: ${var.catalog}
+      name: raw
+      comment: "Datos en crudo, descargados de distintas API's"
+    bronze:
+      catalog_name: ${var.catalog}
+      name: bronze
+      comment: "Tabla Delta con datos en crudo y metadata"
+    silver:
+      catalog_name: ${var.catalog}
+      name: silver
+      comment: "Tabla Delta con datos limpios, tipados y sin duplicados"
+    gold: 
+      catalog_name: ${var.catalog}
+      name: gold
+      comment: "Tabla Delta con datos finales"
+
+  volumes: 
+    landing:
+      catalog_name: ${var.catalog}
+      schema_name: ${resources.schemas.raw.name}
+      name: landing
+      volume_type: MANAGED
+      comment: "JSON crudo particionado por fuente, indicador y fecha"
