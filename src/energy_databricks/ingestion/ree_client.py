@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
+from config import BASE_URL, FORMATO_FECHA, WIDGETS
+
 import requests
-from Proyectos.energy_databricks.src.energy_databricks.ingestion.config import BASE_URL, FORMATO_FECHA, WIDGETS
+import time
 
 '''
     Función que permite sacar las fechas pedidas en rangos de 'max_dias' para poder realizar las peticiones de forma
@@ -52,6 +54,24 @@ def pedir_widget(cfg: dict, inicio: datetime, fin: datetime) -> dict:
 
     return resp.json()
 
+'''
+
+'''
+def descargar(nombre: str, inicio: datetime, fin: datetime) -> list[dict]:
+    if nombre not in WIDGETS:
+      raise ValueError(f"Widget '{nombre}' no existe. Opciones: {list(WIDGETS)}")
+    
+    cfg = WIDGETS[nombre]
+
+    tramos = trocear_rango(inicio, fin, cfg['max_dias'])
+    res = []
+
+    for ini, fi in tramos:
+        res.append(pedir_widget(cfg, ini, fi))
+        time.sleep(1)
+
+    return res
+
 if __name__ == '__main__':
     for t in trocear_rango(datetime(2025, 1, 1), datetime(2025, 3, 31, 23, 59), 30):
        print(t)
@@ -66,3 +86,10 @@ if __name__ == '__main__':
         pedir_widget(generacion_mal, datetime(2025, 10, 1), datetime(2025, 10, 1, 23, 59))
     except requests.HTTPError as e:
         print("Error esperado:", e.response.status_code, e.response.json())
+
+    res = descargar("demanda", datetime(2025, 9, 1), datetime(2025, 10, 31, 23, 59))
+    print(len(res))
+
+    res = descargar("precios", datetime(2025, 10, 25), datetime(2025, 10, 27, 23, 59))
+    valores = res[0]["included"][0]["attributes"]["values"]
+    print(sum(1 for v in valores if v["datetime"].startswith("2025-10-26")))
