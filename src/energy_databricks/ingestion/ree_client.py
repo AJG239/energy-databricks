@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from config import BASE_URL, FORMATO_FECHA, WIDGETS
+from energy_databricks.ingestion.config import BASE_URL, FORMATO_FECHA, WIDGETS
 
 import requests
 import time
