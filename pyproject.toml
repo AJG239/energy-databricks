@@ -32,3 +32,6 @@ build-backend = "hatchling.build"
 
 [tool.ruff]
 line-length = 120
+
+[tool.ruff.lint.per-file-ignores]
+"src/energy_databricks_etl/**" = ["F821"]
