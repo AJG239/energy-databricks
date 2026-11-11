@@ -6,7 +6,13 @@ import pytest
 import requests
 
 from energy_databricks.ingestion.config import BASE_URL, WIDGETS
-from energy_databricks.ingestion.ree_client import construir_params, descargar, pedir_widget, trocear_rango
+from energy_databricks.ingestion.ree_client import (
+    construir_params,
+    descargar,
+    es_transitorio,
+    pedir_widget,
+    trocear_rango,
+)
 
 INICIO = datetime(2025, 1, 1)
 FIN = datetime(2025, 3, 31, 23, 59)
@@ -185,3 +191,28 @@ def test_descargar_hace_una_peticion_por_tramo(monkeypatch):
         "2025-10-01T00:00",
         "2025-10-31T00:00",
     ]
+
+
+"""
+    Tests de es_transitorio
+"""
+
+
+def error_http(cod: int) -> requests.HTTPError:
+    resp = requests.Response()
+    resp.status_code = cod
+    return requests.HTTPError(response=resp)
+
+
+@pytest.mark.parametrize("codigo, esperado", [(400, False), (404, False), (429, True), (500, True), (503, True)])
+def test_es_transitorio_segun_codigo_http(codigo, esperado):
+    assert es_transitorio(error_http(codigo)) == esperado
+
+
+@pytest.mark.parametrize("error", [requests.Timeout(), requests.ConnectionError()])
+def test_errores_de_red_son_transitorios(error):
+    assert es_transitorio(error) is True
+
+
+def test_errores_de_red_no_son_transitorios():
+    assert es_transitorio(ValueError("cualquier cosa")) is False

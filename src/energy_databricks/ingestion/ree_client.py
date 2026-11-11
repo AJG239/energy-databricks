@@ -51,6 +51,22 @@ def construir_params(cfg: dict, inicio: datetime, fin: datetime) -> dict:
 
 
 """
+
+"""
+
+
+def es_transitorio(exc: Exception) -> bool:
+    if isinstance(exc, (requests.Timeout, requests.ConnectionError)):
+        return True
+
+    if isinstance(exc, requests.HTTPError):
+        cod = exc.response.status_code
+        return cod == 429 or (500 <= cod <= 599)
+
+    return False
+
+
+"""
     Realizar petición a la url de ree para pedir los datos, en caso de que error
     guardar el error y la razón de este mismo
 """
@@ -67,7 +83,7 @@ def pedir_widget(cfg: dict, inicio: datetime, fin: datetime) -> dict:
 
 
 """
-
+    Realiza la descarga de los datos de la API
 """
 
 
