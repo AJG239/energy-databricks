@@ -166,6 +166,33 @@ def test_pedir_widget_lanzar_error_si_la_api_da_400(monkeypatch):
         pedir_widget(CFG_PRUEBA, INICIO, FIN)
 
 
+def test_pedir_widget_reintenta_errores(monkeypatch):
+    llamadas = []
+    esperas = []
+
+    respuestas = iter(
+        [
+            RespuestaFalsa({}, status=503),
+            RespuestaFalsa({}, status=503),
+            RespuestaFalsa({}, status=503),
+            RespuestaFalsa({"included": []}),
+        ]
+    )
+
+    def get_falso(url, params, timeout):
+        llamadas.append(params)
+        return next(respuestas)
+
+    monkeypatch.setattr(requests, "get", get_falso)
+    monkeypatch.setattr(time, "sleep", lambda segundos: esperas.append(segundos))
+
+    datos = pedir_widget(CFG_PRUEBA, INICIO, FIN)
+
+    assert len(llamadas) == 4
+    assert esperas == [1, 2, 4]
+    assert datos == {"included": []}
+
+
 """
     Tests para descargar
 """
