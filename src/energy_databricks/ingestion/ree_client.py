@@ -2,6 +2,7 @@ import time
 from datetime import datetime, timedelta
 
 import requests
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from energy_databricks.ingestion.config import BASE_URL, FORMATO_FECHA, WIDGETS
 
@@ -51,11 +52,38 @@ def construir_params(cfg: dict, inicio: datetime, fin: datetime) -> dict:
 
 
 """
+
+"""
+
+
+def es_transitorio(exc: Exception) -> bool:
+    if isinstance(exc, (requests.Timeout, requests.ConnectionError)):
+        return True
+
+    if isinstance(exc, requests.HTTPError):
+        if exc.response is None:
+            return False
+
+        cod = exc.response.status_code
+        return cod == 429 or (500 <= cod <= 599)
+
+    return False
+
+
+"""
     Realizar petición a la url de ree para pedir los datos, en caso de que error
     guardar el error y la razón de este mismo
 """
 
 
+@retry(
+    retry=retry_if_exception(
+        es_transitorio
+    ),  # en caso de que se devuelva un error la función es_transitorio decide si se repite o no
+    stop=stop_after_attempt(4),  # se realiza un máximo de 4 intentos
+    wait=wait_exponential(multiplier=1, min=1, max=30),  # espera desde 1 segundo hasta 30 como máximo
+    reraise=True,  # si se agotan los intentos, lanza el error original
+)
 def pedir_widget(cfg: dict, inicio: datetime, fin: datetime) -> dict:
     url = f"{BASE_URL}{cfg['category']}/{cfg['widget']}"
     params = construir_params(cfg, inicio, fin)
@@ -67,7 +95,7 @@ def pedir_widget(cfg: dict, inicio: datetime, fin: datetime) -> dict:
 
 
 """
-
+    Realiza la descarga de los datos de la API
 """
 
 

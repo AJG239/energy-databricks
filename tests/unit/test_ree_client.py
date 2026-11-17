@@ -6,7 +6,13 @@ import pytest
 import requests
 
 from energy_databricks.ingestion.config import BASE_URL, WIDGETS
-from energy_databricks.ingestion.ree_client import construir_params, descargar, pedir_widget, trocear_rango
+from energy_databricks.ingestion.ree_client import (
+    construir_params,
+    descargar,
+    es_transitorio,
+    pedir_widget,
+    trocear_rango,
+)
 
 INICIO = datetime(2025, 1, 1)
 FIN = datetime(2025, 3, 31, 23, 59)
@@ -121,14 +127,14 @@ def test_widgets_del_catalogo_es_valido(nombre):
 class RespuestaFalsa:
     def __init__(self, datos, status=200):
         self.datos = datos
-        self.status = status
+        self.status_code = status
 
     def json(self):
         return self.datos
 
     def raise_for_status(self):
-        if self.status >= 400:
-            raise requests.HTTPError(f"Error: {self.status}")
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"Error: {self.status_code}", response=self)
 
     def sleep_falso(segundos):
         return None
@@ -160,6 +166,67 @@ def test_pedir_widget_lanzar_error_si_la_api_da_400(monkeypatch):
         pedir_widget(CFG_PRUEBA, INICIO, FIN)
 
 
+def test_pedir_widget_reintenta_errores(monkeypatch):
+    llamadas = []
+    esperas = []
+
+    respuestas = iter(
+        [
+            RespuestaFalsa({}, status=503),
+            RespuestaFalsa({}, status=503),
+            RespuestaFalsa({}, status=503),
+            RespuestaFalsa({"included": []}),
+        ]
+    )
+
+    def get_falso(url, params, timeout):
+        llamadas.append(params)
+        return next(respuestas)
+
+    monkeypatch.setattr(requests, "get", get_falso)
+    monkeypatch.setattr(time, "sleep", lambda segundos: esperas.append(segundos))
+
+    datos = pedir_widget(CFG_PRUEBA, INICIO, FIN)
+
+    assert len(llamadas) == 4
+    assert esperas == [1, 2, 4]
+    assert datos == {"included": []}
+
+
+def test_pedir_widget_no_reintenta_un_400(monkeypatch):
+    llamadas = []
+
+    def get_falso(url, params, timeout):
+        llamadas.append(params)
+        return RespuestaFalsa({}, status=400)
+
+    monkeypatch.setattr(requests, "get", get_falso)
+    monkeypatch.setattr(time, "sleep", lambda segundos: None)
+
+    with pytest.raises(requests.HTTPError):
+        pedir_widget(CFG_PRUEBA, INICIO, FIN)
+
+    assert len(llamadas) == 1
+
+
+def test_pedir_widget_se_rinde_tras_4_intentos(monkeypatch):
+    llamadas = []
+    esperas = []
+
+    def get_falso(url, params, timeout):
+        llamadas.append(params)
+        return RespuestaFalsa({}, status=503)
+
+    monkeypatch.setattr(requests, "get", get_falso)
+    monkeypatch.setattr(time, "sleep", lambda segundos: esperas.append(segundos))
+
+    with pytest.raises(requests.HTTPError):
+        pedir_widget(CFG_PRUEBA, INICIO, FIN)
+
+    assert len(llamadas) == 4
+    assert esperas == [1, 2, 4]
+
+
 """
     Tests para descargar
 """
@@ -185,3 +252,32 @@ def test_descargar_hace_una_peticion_por_tramo(monkeypatch):
         "2025-10-01T00:00",
         "2025-10-31T00:00",
     ]
+
+
+"""
+    Tests de es_transitorio
+"""
+
+
+def error_http(cod: int) -> requests.HTTPError:
+    resp = requests.Response()
+    resp.status_code = cod
+    return requests.HTTPError(response=resp)
+
+
+@pytest.mark.parametrize("codigo, esperado", [(400, False), (404, False), (429, True), (500, True), (503, True)])
+def test_es_transitorio_segun_codigo_http(codigo, esperado):
+    assert es_transitorio(error_http(codigo)) == esperado
+
+
+@pytest.mark.parametrize("error", [requests.Timeout(), requests.ConnectionError()])
+def test_errores_de_red_son_transitorios(error):
+    assert es_transitorio(error) is True
+
+
+def test_errores_de_red_no_son_transitorios():
+    assert es_transitorio(ValueError("cualquier cosa")) is False
+
+
+def test_http_error_sin_respuesta_no_es_transitorio():
+    assert es_transitorio(requests.HTTPError("sin respuesta")) is False
