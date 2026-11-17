@@ -127,14 +127,14 @@ def test_widgets_del_catalogo_es_valido(nombre):
 class RespuestaFalsa:
     def __init__(self, datos, status=200):
         self.datos = datos
-        self.status = status
+        self.status_code = status
 
     def json(self):
         return self.datos
 
     def raise_for_status(self):
-        if self.status >= 400:
-            raise requests.HTTPError(f"Error: {self.status}")
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"Error: {self.status_code}", response=self)
 
     def sleep_falso(segundos):
         return None
@@ -216,3 +216,7 @@ def test_errores_de_red_son_transitorios(error):
 
 def test_errores_de_red_no_son_transitorios():
     assert es_transitorio(ValueError("cualquier cosa")) is False
+
+
+def test_http_error_sin_respuesta_no_es_transitorio():
+    assert es_transitorio(requests.HTTPError("sin respuesta")) is False
