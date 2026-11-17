@@ -193,6 +193,40 @@ def test_pedir_widget_reintenta_errores(monkeypatch):
     assert datos == {"included": []}
 
 
+def test_pedir_widget_no_reintenta_un_400(monkeypatch):
+    llamadas = []
+
+    def get_falso(url, params, timeout):
+        llamadas.append(params)
+        return RespuestaFalsa({}, status=400)
+
+    monkeypatch.setattr(requests, "get", get_falso)
+    monkeypatch.setattr(time, "sleep", lambda segundos: None)
+
+    with pytest.raises(requests.HTTPError):
+        pedir_widget(CFG_PRUEBA, INICIO, FIN)
+
+    assert len(llamadas) == 1
+
+
+def test_pedir_widget_se_rinde_tras_4_intentos(monkeypatch):
+    llamadas = []
+    esperas = []
+
+    def get_falso(url, params, timeout):
+        llamadas.append(params)
+        return RespuestaFalsa({}, status=503)
+
+    monkeypatch.setattr(requests, "get", get_falso)
+    monkeypatch.setattr(time, "sleep", lambda segundos: esperas.append(segundos))
+
+    with pytest.raises(requests.HTTPError):
+        pedir_widget(CFG_PRUEBA, INICIO, FIN)
+
+    assert len(llamadas) == 4
+    assert esperas == [1, 2, 4]
+
+
 """
     Tests para descargar
 """
