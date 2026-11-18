@@ -4,11 +4,11 @@ from itertools import pairwise
 
 import pytest
 import requests
+from fakes import CFG_PRUEBA, RespuestaFalsa, error_http
 
 from energy_databricks.ingestion.config import BASE_URL, WIDGETS
 from energy_databricks.ingestion.ree_client import (
     construir_params,
-    descargar,
     es_transitorio,
     pedir_widget,
     trocear_rango,
@@ -16,14 +16,6 @@ from energy_databricks.ingestion.ree_client import (
 
 INICIO = datetime(2025, 1, 1)
 FIN = datetime(2025, 3, 31, 23, 59)
-
-CFG_PRUEBA = {
-    "category": "cat",
-    "widget": "wid",
-    "time_trunc": "hour",
-    "geo": {"geo_trunc": "electric_system", "geo_limit": "peninsular", "geo_ids": "8741"},
-    "max_dias": 30,
-}
 
 """
     Test de trocear_rango
@@ -124,22 +116,6 @@ def test_widgets_del_catalogo_es_valido(nombre):
 """
 
 
-class RespuestaFalsa:
-    def __init__(self, datos, status=200):
-        self.datos = datos
-        self.status_code = status
-
-    def json(self):
-        return self.datos
-
-    def raise_for_status(self):
-        if self.status_code >= 400:
-            raise requests.HTTPError(f"Error: {self.status_code}", response=self)
-
-    def sleep_falso(segundos):
-        return None
-
-
 def test_pedir_widget_llama_a_la_url_correcta_y_devuelve_json(monkeypatch):
     llamadas = []
 
@@ -228,41 +204,8 @@ def test_pedir_widget_se_rinde_tras_4_intentos(monkeypatch):
 
 
 """
-    Tests para descargar
-"""
-
-
-def test_descargar_hace_una_peticion_por_tramo(monkeypatch):
-    llamadas = []
-
-    def get_falso(url, params, timeout):
-        llamadas.append({"url": url, "params": params, "timeout": timeout})
-        return RespuestaFalsa({"included": []})
-
-    monkeypatch.setattr(requests, "get", get_falso)
-    monkeypatch.setattr(time, "sleep", lambda segundos: None)
-
-    monkeypatch.setitem(WIDGETS, "prueba", CFG_PRUEBA)
-    res = descargar("prueba", datetime(2025, 9, 1), datetime(2025, 10, 31, 23, 59))
-
-    assert len(res) == 3
-    assert len(llamadas) == 3
-    assert [ll["params"]["start_date"] for ll in llamadas] == [
-        "2025-09-01T00:00",
-        "2025-10-01T00:00",
-        "2025-10-31T00:00",
-    ]
-
-
-"""
     Tests de es_transitorio
 """
-
-
-def error_http(cod: int) -> requests.HTTPError:
-    resp = requests.Response()
-    resp.status_code = cod
-    return requests.HTTPError(response=resp)
 
 
 @pytest.mark.parametrize("codigo, esperado", [(400, False), (404, False), (429, True), (500, True), (503, True)])

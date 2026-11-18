@@ -11,12 +11,14 @@ def test_guardar_en_la_ruta_esperada(tmp_path):
     ruta = guardar_en_landing({"a": 1}, tmp_path, "demanda", INICIO, FIN, MOMENTO)
 
     esperada = (
-        tmp_path
-        / "fuente=ree"
-        / "widget=demanda"
-        / "ingesta=2026-11-17"
-        / "demanda_2025-09-01_2025-09-30_2026-11-17.json"
+        tmp_path / "fuente=ree" / "widget=demanda" / "ingesta=2026-11-17" / "demanda_2025-09-01_2025-09-30_T125100.json"
     )
 
     assert ruta == esperada
     assert ruta.exists()
+
+
+def test_dos_descargas_del_mismo_dia_conviven(tmp_path):
+    guardar_en_landing({"a": 1}, tmp_path, "demanda", INICIO, FIN, datetime(2026, 11, 17, 12, 51, 0))
+    ruta = guardar_en_landing({"a": 2}, tmp_path, "demanda", INICIO, FIN, datetime(2026, 11, 17, 18, 3, 12))
+    assert len(list(ruta.parent.glob("*.json"))) == 2

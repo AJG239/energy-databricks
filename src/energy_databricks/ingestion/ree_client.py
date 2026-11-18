@@ -1,4 +1,3 @@
-import time
 from datetime import datetime, timedelta
 
 import requests
@@ -6,13 +5,13 @@ from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponen
 
 from energy_databricks.ingestion.config import BASE_URL, FORMATO_FECHA, WIDGETS
 
-"""
-    Función que permite sacar las fechas pedidas en rangos de 'max_dias' para poder realizar las peticiones de forma
-    más sencilla
-"""
-
 
 def trocear_rango(inicio: datetime, fin: datetime, max_dias: int) -> list[tuple[datetime, datetime]]:
+    """
+    Función que permite sacar las fechas pedidas en rangos de 'max_dias' para poder realizar las peticiones de forma
+    más sencilla
+    """
+
     if max_dias <= 0:
         raise ValueError("los días deben ser mayores que 0")
 
@@ -33,12 +32,11 @@ def trocear_rango(inicio: datetime, fin: datetime, max_dias: int) -> list[tuple[
     return tramos
 
 
-"""
-    Primera versión de construcción de parámetros para poder enviarlos junto con la petición a la url
-"""
-
-
 def construir_params(cfg: dict, inicio: datetime, fin: datetime) -> dict:
+    """
+    Primera versión de construcción de parámetros para poder enviarlos junto con la petición a la url
+    """
+
     params = {
         "start_date": inicio.strftime(FORMATO_FECHA),
         "end_date": fin.strftime(FORMATO_FECHA),
@@ -49,11 +47,6 @@ def construir_params(cfg: dict, inicio: datetime, fin: datetime) -> dict:
         params.update(cfg["geo"])  # Se incluyen los valores de 'geo' en caso de que existan
 
     return params
-
-
-"""
-
-"""
 
 
 def es_transitorio(exc: Exception) -> bool:
@@ -70,12 +63,6 @@ def es_transitorio(exc: Exception) -> bool:
     return False
 
 
-"""
-    Realizar petición a la url de ree para pedir los datos, en caso de que error
-    guardar el error y la razón de este mismo
-"""
-
-
 @retry(
     retry=retry_if_exception(
         es_transitorio
@@ -85,6 +72,11 @@ def es_transitorio(exc: Exception) -> bool:
     reraise=True,  # si se agotan los intentos, lanza el error original
 )
 def pedir_widget(cfg: dict, inicio: datetime, fin: datetime) -> dict:
+    """
+    Realizar petición a la url de ree para pedir los datos, en caso de que error
+    guardar el error y la razón de este mismo
+    """
+
     url = f"{BASE_URL}{cfg['category']}/{cfg['widget']}"
     params = construir_params(cfg, inicio, fin)
 
@@ -92,27 +84,6 @@ def pedir_widget(cfg: dict, inicio: datetime, fin: datetime) -> dict:
     resp.raise_for_status()
 
     return resp.json()
-
-
-"""
-    Realiza la descarga de los datos de la API
-"""
-
-
-def descargar(nombre: str, inicio: datetime, fin: datetime) -> list[dict]:
-    if nombre not in WIDGETS:
-        raise ValueError(f"Widget '{nombre}' no existe. Opciones: {list(WIDGETS)}")
-
-    cfg = WIDGETS[nombre]
-
-    tramos = trocear_rango(inicio, fin, cfg["max_dias"])
-    res = []
-
-    for ini, fi in tramos:
-        res.append(pedir_widget(cfg, ini, fi))
-        time.sleep(1)
-
-    return res
 
 
 if __name__ == "__main__":
@@ -129,10 +100,3 @@ if __name__ == "__main__":
         pedir_widget(generacion_mal, datetime(2025, 10, 1), datetime(2025, 10, 1, 23, 59))
     except requests.HTTPError as e:
         print("Error esperado:", e.response.status_code, e.response.json())
-
-    res = descargar("demanda", datetime(2025, 9, 1), datetime(2025, 10, 31, 23, 59))
-    print(len(res))
-
-    res = descargar("precios", datetime(2025, 10, 25), datetime(2025, 10, 27, 23, 59))
-    valores = res[0]["included"][0]["attributes"]["values"]
-    print(sum(1 for v in valores if v["datetime"].startswith("2025-10-26")))
