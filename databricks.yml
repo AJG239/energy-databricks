@@ -30,7 +30,7 @@ targets:
     workspace:
       host: https://dbc-7be0c1b7-49b9.cloud.databricks.com
     variables:
-      catalog: energy_UC
+      catalog: energy_uc
       schema: ${workspace.current_user.short_name}
   prod:
     mode: production
@@ -39,7 +39,7 @@ targets:
       # We explicitly deploy to /Workspace/Users/alexjimgar2003@gmail.com to make sure we only have a single copy.
       root_path: /Workspace/Users/alexjimgar2003@gmail.com/.bundle/${bundle.name}/${bundle.target}
     variables:
-      catalog: energy_UC
+      catalog: energy_uc
       schema: prod
     permissions:
       - user_name: alexjimgar2003@gmail.com
