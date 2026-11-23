@@ -1,0 +1,38 @@
+# Job ingesta que descarga los widgets de REE y guarda los JSON en el volume landing
+
+resources:
+  jobs:
+    ingesta_ree:  # Nombre interno que utiliza el bundle (para cuando se ejecute 'bundle run')
+      name: ingesta_ree # Nombre que se reflejará en el pipeline
+      
+      # Parámetros del job
+      parameters:
+        - name: widgets
+          default: 'precios,demanda,generacion'
+        - name: inicio
+          default: ''
+        - name: fin
+          default: ''
+      
+      tasks:
+        - task_key: ingesta
+          python_wheel_task: # Ejecuta un comando de un paquete .whl
+            package_name: energy_databricks
+            entry_point: ingesta
+            parameters: # Argumentos que recibe argparse, como en la terminal
+              - '--widgets'
+              - '{{job.parameters.widgets}}' # {{ }} → lo rellena Databricks AL EJECUTAR
+              - '--inicio'
+              - '{{job.parameters.inicio}}'
+              - '--fin'
+              - '{{job.parameters.fin}}'
+              - '--base'
+              - '/Volumes/${var.catalog}/${resources.schemas.raw.name}/landing'
+          environment_key: default  # En qué entorno se ejecuta
+      
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: '5'
+            dependencies:
+              - ../dist/*.whl # el .whl que construye `bundle deploy` (incluye requests y tenacity)
