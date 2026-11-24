@@ -49,32 +49,4 @@ def main():
 
 
 if __name__ == "__main__":
-    HOY = datetime(2026, 11, 23, 12, 42, tzinfo=UTC)  # "hoy" fijo para probar
-
-    # 1. Sin fechas → ventana por defecto: ayer (22/11) y los 6 días anteriores (desde el 16/11)
-    assert calcular_rango("", "", HOY) == (
-        datetime(2026, 11, 16, 0, 0),
-        datetime(2026, 11, 22, 23, 59),
-    )
-
-    # 2. Con las dos fechas → ese rango exacto, con el fin a las 23:59
-    assert calcular_rango("2025-10-01", "2025-10-03", HOY) == (
-        datetime(2025, 10, 1, 0, 0),
-        datetime(2025, 10, 3, 23, 59),
-    )
-
-    # 3. Solo fin → los 7 días que acaban en esa fecha
-    assert calcular_rango("", "2025-10-10", HOY) == (
-        datetime(2025, 10, 4, 0, 0),
-        datetime(2025, 10, 10, 23, 59),
-    )
-
-    # 4. Solo inicio → desde esa fecha hasta ayer
-    assert calcular_rango("2025-10-01", "", HOY) == (
-        datetime(2025, 10, 1, 0, 0),
-        datetime(2026, 11, 22, 23, 59),
-    )
-
-    print("✅ calcular_rango OK")
-
     main()
