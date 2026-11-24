@@ -13,20 +13,20 @@ WIDGETS = {
         "widget": "precios-mercados-tiempo-real",
         "time_trunc": "hour",
         "geo": PENINSULAR,
-        "max_dias": 30,
+        "max_dias": 28,
     },
     "demanda": {
         "category": "demanda",
         "widget": "evolucion",
         "time_trunc": "hour",
         "geo": PENINSULAR,
-        "max_dias": 30,
+        "max_dias": 28,
     },
     "generacion": {
         "category": "generacion",
         "widget": "estructura-generacion",
         "time_trunc": "day",
         "geo": PENINSULAR,
-        "max_dias": 30,  # provisional: falta probar el límite real con 'day'
+        "max_dias": 366,
     },
 }
