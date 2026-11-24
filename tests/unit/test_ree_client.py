@@ -106,6 +106,9 @@ def test_no_se_modifica_cfg_original():
 def test_widgets_del_catalogo_es_valido(nombre):
     cfg = WIDGETS[nombre]
 
+    if cfg["time_trunc"] == "hour":
+        assert cfg["max_dias"] <= 28
+
     assert cfg["time_trunc"] in {"hour", "day", "month", "year"}
     assert cfg["max_dias"] > 0
     assert cfg["category"] in {"demanda", "mercados", "generacion"}
