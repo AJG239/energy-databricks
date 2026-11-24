@@ -87,6 +87,14 @@ def pedir_widget(cfg: dict, inicio: datetime, fin: datetime) -> dict:
 
 
 if __name__ == "__main__":
+    """
+    Comprobación del time_trunc a day
+
+    cfg = WIDGETS["generacion"]
+    datos = pedir_widget(cfg, datetime(2024, 1, 1), datetime(2024, 12, 31, 23, 59))
+    print(len(datos["included"][0]["attributes"]["values"]))   # ¿366? (2024 es bisiesto)
+    """
+
     for t in trocear_rango(datetime(2025, 1, 1), datetime(2025, 3, 31, 23, 59), 30):
         print(t)
 
