@@ -1,7 +1,7 @@
 [project]
 name = "energy_databricks"
 version = "0.0.1"
-authors = [{ name = "alexjimgar2003@gmail.com" }]
+authors = [{ name = "Alejandro Jiménez" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
     # Any dependencies for jobs and pipelines in this project can be added here

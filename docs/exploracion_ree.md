@@ -50,15 +50,15 @@ included    → lista de indicadores (series)
 
 ## 5. Límites y errores
 
-- Con `time_trunc=hour`: **máximo 30 días por petición** (30 días funciona, 31 falla; cruzar de mes no influye). Pendiente: comprobar el límite con `day`.
+- Con `time_trunc=hour`: **máximo 28 días por petición** (28 días funciona, 31 falla; cruzar de mes no influye). Pendiente: comprobar el límite con `day`.
 - Errores: código 400 con cuerpo `{"errors": [{"status", "title", "detail"}]}`. Un `time_trunc` no válido o no soportado por el widget da 400.
 - ⚠️ El `detail` puede engañar: el 400 de generación con `hour` dice "inténtelo de nuevo más tarde", pero reintentar no lo arregla.
-- Pendiente: widget inexistente, fecha mal escrita y rango de más de 30 días.
+- Pendiente: widget inexistente, fecha mal escrita y rango de más de 28 días.
 
 ## 6. Consecuencias para el diseño
 
 1. **Ingesta guiada por configuración**: un catálogo de widgets (categoría, widget, `time_trunc`, ámbito geográfico, días máximos por petición) y una única función de descarga.
-2. **Troceo del rango**: el backfill se parte en tramos de como mucho 30 días.
+2. **Troceo del rango**: el backfill se parte en tramos de como mucho 28 días.
 3. **Reintentos**: solo para errores transitorios (timeouts, 429, 5xx). Fallo inmediato en 4xx, guardando el `detail` en el log.
 4. **UTC** en silver; clave natural = indicador + timestamp UTC.
 5. **Ámbito geográfico único**: peninsular para todos los widgets.
