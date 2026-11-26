@@ -26,6 +26,7 @@ dev = [
 [project.scripts]
 main = "energy_databricks.main:main"
 ingesta = "energy_databricks.ingestion.cli:main"
+bronze = "energy_databricks.transformations.run_bronze:main"
 
 [build-system]
 requires = ["hatchling"]

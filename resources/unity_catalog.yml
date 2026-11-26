@@ -24,3 +24,9 @@ resources:
       name: landing
       volume_type: MANAGED
       comment: "JSON crudo particionado por fuente, indicador y fecha"
+    checkpoints:
+      catalog_name: ${var.catalog}
+      schema_name: ${resources.schemas.bronze.name}
+      name: checkpoints
+      volume_type: MANAGED
+      comment: "Checkpoints y esquemas de AutoLoader (memoria de que ficheros se han procesado)"

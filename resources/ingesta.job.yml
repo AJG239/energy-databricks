@@ -29,7 +29,20 @@ resources:
               - '--base'
               - '/Volumes/${var.catalog}/${resources.schemas.raw.name}/landing'
           environment_key: default  # En qué entorno se ejecuta
-      
+        - task_key: bronze
+          depends_on:
+            - task_key: ingesta
+          python_wheel_task:
+            package_name: energy_databricks
+            entry_point: bronze
+            parameters:
+              - '--landing'
+              - '/Volumes/${var.catalog}/${resources.schemas.raw.name}/landing/fuente=ree'
+              - '--checkpoint'
+              - '/Volumes/${var.catalog}/${resources.schemas.bronze.name}/${resources.volumes.checkpoints.name}/ree_bronze'
+              - '--tabla'
+              - '${var.catalog}.${resources.schemas.bronze.name}.ree_bronze'
+          environment_key: default
       environments:
         - environment_key: default
           spec:
