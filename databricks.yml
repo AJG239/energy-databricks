@@ -36,7 +36,7 @@ targets:
     mode: production
     workspace:
       host: https://dbc-7be0c1b7-49b9.cloud.databricks.com
-      # We explicitly deploy to /Workspace/Users/alexjimgar2003@gmail.com to make sure we only have a single copy.
+      # We explicitly deploy to /Workspace/Users/userName to make sure we only have a single copy.
       root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
       catalog: energy_uc
